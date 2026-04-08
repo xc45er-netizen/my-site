@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的打卡 & 知识库</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; max-width: 720px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    nav { display: flex; gap: 12px; margin-bottom: 24px; }
+    nav button { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; background: #ddd; }
+    nav button.active { background: #333; color: #fff; }
+    .page { display: none; }
+    .page.active { display: block; }
+    h1 { margin-bottom: 16px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
+    textarea { height: 80px; resize: vertical; }
+    .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #333; color: #fff; }
+    .btn-danger { background: #e55; color: #fff; float: right; }
+    .badge { display: inline-block; background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-size: 13px; }
+    .tag { display: inline-block; background: #e8f0fe; color: #1a73e8; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 4px; }
+    .streak { font-size: 32px; font-weight: bold; color: #333; }
+    small { color: #888; font-size: 12px; }
+    .search-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-row input { margin: 0; }
+  </style>
+</head>
+<body>
+<nav>
+  <button class="active" onclick="showPage('checkin', this)">📅 打卡</button>
+  <button onclick="showPage('knowledge', this)">📚 知识库</button>
+</nav>
+<div id="checkin" class="page active">
+  <h1>每日打卡</h1>
+  <div class="card">
+    <p id="today-label" style="margin-bottom:12px"></p>
+    <div id="checkin-area"></div>
+  </div>
+  <div class="card">
+    <p>🔥 连续打卡 <span class="streak" id="streak">0</span> 天</p>
+  </div>
+  <h2 style="margin:16px 0 8px">历史记录</h2>
+  <div id="checkin-list"></div>
+</div>
+<div id="knowledge" class="page">
+  <h1>知识库</h1>
+  <div class="search-row">
+    <input id="search" placeholder="搜索标题、内容、标签..." oninput="renderKnowledge()">
+  </div>
+  <div class="card">
+    <input id="k-title" placeholder="标题 *">
+    <textarea id="k-content" placeholder="内容 *"></textarea>
+    <input id="k-tags" placeholder="标签（逗号分隔，可选）">
+    <button class="btn btn-primary" onclick="addKnowledge()">保存</button>
+  </div>
+  <div id="knowledge-list"></div>
+</div>
+<script>
+  const today = () => new Date().toISOString().slice(0, 10);
+  function getCheckins() { return JSON.parse(localStorage.getItem("checkins") || "[]"); }
+  function saveCheckins(data) { localStorage.setItem("checkins", JSON.stringify(data)); }
+  function doCheckin() {
+    const note = document.getElementById("note-input").value.trim();
+    const checkins = getCheckins();
+    checkins.unshift({ date: today(), note });
+    saveCheckins(checkins);
+    renderCheckin();
+  }
+  function prevDay(dateStr) {
+    const d = new Date(dateStr); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10);
+  }
+  function calcStreak(checkins) {
+    if (!checkins.length) return 0;
+    const dates = checkins.map(c => c.date).sort().reverse();
+    let streak = 0, cur = today();
+    for (const d of dates) { if (d === cur) { streak++; cur = prevDay(cur); } else break; }
+    return streak;
+  }
+  function renderCheckin() {
+    const checkins = getCheckins();
+    const checkedToday = checkins.some(c => c.date === today());
+    document.getElementById("today-label").textContent = "今天：" + today();
+    document.getElementById("streak").textContent = calcStreak(checkins);
+    const area = document.getElementById("checkin-area");
+    area.innerHTML = checkedToday
+      ? `<span class="badge">✅ 今天已打卡</span>`
+      : `<textarea id="note-input" placeholder="今天的备注（可选）"></textarea><button class="btn btn-primary" onclick="doCheckin()">打卡</button>`;
+    document.getElementById("checkin-list").innerHTML = checkins.map(c =>
+      `<div class="card"><strong>${c.date}</strong>${c.note ? `<p style="margin-top:6px">${c.note}</p>` : ""}</div>`
+    ).join("");
+  }
+  function getKnowledge() { return JSON.parse(localStorage.getItem("knowledge") || "[]"); }
+  function saveKnowledge(data) { localStorage.setItem("knowledge", JSON.stringify(data)); }
+  function addKnowledge() {
+    const title = document.getElementById("k-title").value.trim();
+    const content = document.getElementById("k-content").value.trim();
+    const tags = document.getElementById("k-tags").value.trim();
+    if (!title || !content) return alert("标题和内容不能为空");
+    const items = getKnowledge();
+    items.unshift({ id: Date.now(), title, content, tags, date: today() });
+    saveKnowledge(items);
+    document.getElementById("k-title").value = "";
+    document.getElementById("k-content").value = "";
+    document.getElementById("k-tags").value = "";
+    renderKnowledge();
+  }
+  function deleteKnowledge(id) {
+    if (!confirm("确认删除？")) return;
+    saveKnowledge(getKnowledge().filter(k => k.id !== id));
+    renderKnowledge();
+  }
+  function renderKnowledge() {
+    const q = document.getElementById("search").value.toLowerCase();
+    const items = getKnowledge().filter(k =>
+      !q || k.title.toLowerCase().includes(q) || k.content.toLowerCase().includes(q) || k.tags.toLowerCase().includes(q)
+    );
+    document.getElementById("knowledge-list").innerHTML = items.map(k =>
+      `<div class="card"><button class="btn btn-danger" onclick="deleteKnowledge(${k.id})">删除</button><strong>${k.title}</strong><p style="margin:8px 0">${k.content}</p>${k.tags ? k.tags.split(",").map(t => `<span class="tag">${t.trim()}</span>`).join("") : ""}<br><small>${k.date}</small></div>`
+    ).join("") || "<p style='color:#888'>暂无内容</p>";
+  }
+  function showPage(name, btn) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+    document.getElementById(name).classList.add("active");
+    btn.classList.add("active");
+  }
+  renderCheckin();
+  renderKnowledge();
+</script>
+</body>
+</html>
