@@ -3,96 +3,238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的打卡 & 知识库</title>
+  <title>打卡小屋</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; max-width: 720px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-    nav { display: flex; gap: 12px; margin-bottom: 24px; }
-    nav button { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; background: #ddd; }
-    nav button.active { background: #333; color: #fff; }
-    .page { display: none; }
+    body { font-family: sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+    nav { display: flex; background: #16213e; border-bottom: 2px solid #0f3460; }
+    nav button { flex: 1; padding: 14px; border: none; background: none; color: #aaa; font-size: 15px; cursor: pointer; }
+    nav button.active { color: #e94560; border-bottom: 3px solid #e94560; }
+    .page { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
     .page.active { display: block; }
-    h1 { margin-bottom: 16px; }
-    .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-    input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
-    textarea { height: 80px; resize: vertical; }
-    .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    .btn-primary { background: #333; color: #fff; }
-    .btn-danger { background: #e55; color: #fff; float: right; }
-    .badge { display: inline-block; background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-size: 13px; }
-    .tag { display: inline-block; background: #e8f0fe; color: #1a73e8; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 4px; }
-    .streak { font-size: 32px; font-weight: bold; color: #333; }
-    small { color: #888; font-size: 12px; }
-    .search-row { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-row input { margin: 0; }
+
+    /* 角色区 */
+    .character-box { text-align: center; padding: 24px 0 16px; }
+    .character-box img { width: 120px; height: 120px; image-rendering: pixelated; }
+    .character-box.jump img { animation: jump 0.5s ease; }
+    .character-box.celebrate img { animation: celebrate 1s ease; }
+    @keyframes jump { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
+    @keyframes celebrate { 0%,100%{transform:scale(1) rotate(0)} 25%{transform:scale(1.2) rotate(-10deg)} 75%{transform:scale(1.2) rotate(10deg)} }
+
+    .level-badge { display: inline-block; background: #e94560; color: #fff; padding: 4px 14px; border-radius: 12px; font-size: 13px; margin-top: 8px; }
+    .level-name { font-size: 18px; font-weight: bold; margin-top: 6px; }
+
+    /* 进度环 */
+    .ring-wrap { display: flex; justify-content: center; gap: 24px; margin: 16px 0; }
+    .ring-item { text-align: center; }
+    .ring-item svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: #0f3460; stroke-width: 6; }
+    .ring-fg { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+    .ring-streak .ring-fg { stroke: #e94560; }
+    .ring-total .ring-fg { stroke: #f5a623; }
+    .ring-label { font-size: 22px; font-weight: bold; margin-top: 4px; }
+    .ring-sub { font-size: 11px; color: #aaa; }
+
+    /* 打卡按钮 */
+    .checkin-btn { display: block; width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 16px 0; transition: transform 0.1s; }
+    .checkin-btn:active { transform: scale(0.97); }
+    .checkin-btn.ready { background: linear-gradient(135deg, #e94560, #f5a623); color: #fff; }
+    .checkin-btn.done { background: #2a2a4a; color: #666; cursor: default; }
+
+    textarea { width: 100%; padding: 10px; border: 1px solid #0f3460; border-radius: 8px; background: #16213e; color: #eee; font-size: 14px; resize: vertical; min-height: 70px; margin-bottom: 10px; }
+    input { width: 100%; padding: 10px; border: 1px solid #0f3460; border-radius: 8px; background: #16213e; color: #eee; font-size: 14px; margin-bottom: 8px; }
+
+    /* 里程碑 */
+    .milestones { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .milestone { padding: 6px 12px; border-radius: 20px; font-size: 12px; background: #16213e; border: 1px solid #0f3460; color: #aaa; }
+    .milestone.unlocked { background: #e94560; border-color: #e94560; color: #fff; }
+
+    /* 历史 */
+    .history-item { background: #16213e; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid #e94560; }
+    .history-item .date { font-size: 13px; color: #aaa; }
+
+    /* 知识库 */
+    .card { background: #16213e; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #e94560; color: #fff; font-size: 15px; cursor: pointer; }
+    .btn-danger { padding: 4px 10px; border: none; border-radius: 6px; background: #333; color: #e55; cursor: pointer; font-size: 12px; float: right; }
+    .tag { display: inline-block; background: #0f3460; color: #7eb8f7; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin: 2px; }
+    .search-row { margin-bottom: 12px; }
+    h2 { font-size: 15px; color: #aaa; margin: 16px 0 8px; }
   </style>
 </head>
 <body>
+
 <nav>
-  <button class="active" onclick="showPage('checkin', this)">📅 打卡</button>
-  <button onclick="showPage('knowledge', this)">📚 知识库</button>
+  <button class="active" onclick="showPage('checkin',this)">📅 打卡</button>
+  <button onclick="showPage('knowledge',this)">📚 知识库</button>
 </nav>
+
+<!-- 打卡页 -->
 <div id="checkin" class="page active">
-  <h1>每日打卡</h1>
-  <div class="card">
-    <p id="today-label" style="margin-bottom:12px"></p>
-    <div id="checkin-area"></div>
+  <div class="character-box" id="char-box">
+    <img id="char-img" src="idle.png" onerror="this.style.fontSize='80px';this.outerHTML='<div style=\'font-size:80px\' id=\'char-emoji\'>🧍</div>'">
+    <div class="level-badge" id="level-badge">Lv.1</div>
+    <div class="level-name" id="level-name">初学者</div>
   </div>
-  <div class="card">
-    <p>🔥 连续打卡 <span class="streak" id="streak">0</span> 天</p>
+
+  <div class="ring-wrap">
+    <div class="ring-item ring-streak">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" id="ring-streak" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+      </svg>
+      <div class="ring-label" id="streak-num">0</div>
+      <div class="ring-sub">连续天数</div>
+    </div>
+    <div class="ring-item ring-total">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" id="ring-total" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+      </svg>
+      <div class="ring-label" id="total-num">0</div>
+      <div class="ring-sub">累计次数</div>
+    </div>
   </div>
-  <h2 style="margin:16px 0 8px">历史记录</h2>
+
+  <div class="milestones" id="milestones"></div>
+
+  <div id="note-wrap">
+    <textarea id="note-input" placeholder="今天的备注（可选）"></textarea>
+  </div>
+  <button class="checkin-btn ready" id="checkin-btn" onclick="doCheckin()">✅ 立即打卡</button>
+
+  <h2>打卡历史</h2>
   <div id="checkin-list"></div>
 </div>
+
+<!-- 知识库页 -->
 <div id="knowledge" class="page">
-  <h1>知识库</h1>
   <div class="search-row">
-    <input id="search" placeholder="搜索标题、内容、标签..." oninput="renderKnowledge()">
+    <input id="search" placeholder="🔍 搜索标题、内容、标签..." oninput="renderKnowledge()">
   </div>
   <div class="card">
     <input id="k-title" placeholder="标题 *">
     <textarea id="k-content" placeholder="内容 *"></textarea>
     <input id="k-tags" placeholder="标签（逗号分隔，可选）">
-    <button class="btn btn-primary" onclick="addKnowledge()">保存</button>
+    <button class="btn-primary" onclick="addKnowledge()">保存</button>
   </div>
   <div id="knowledge-list"></div>
 </div>
+
 <script>
+  const LEVELS = [
+    { min: 0,   streak: 0,  name: "初学者",   emoji: "🧍" },
+    { min: 7,   streak: 3,  name: "坚持者",   emoji: "🚶" },
+    { min: 20,  streak: 7,  name: "习惯家",   emoji: "🏃" },
+    { min: 50,  streak: 14, name: "自律达人", emoji: "⚡" },
+    { min: 100, streak: 30, name: "传奇",     emoji: "🏆" },
+  ];
+
+  const MILESTONES = [
+    { label: "首次打卡", streak: 0, total: 1 },
+    { label: "连续3天",  streak: 3, total: 0 },
+    { label: "连续7天",  streak: 7, total: 0 },
+    { label: "累计10次", streak: 0, total: 10 },
+    { label: "连续14天", streak: 14, total: 0 },
+    { label: "累计30次", streak: 0, total: 30 },
+    { label: "连续30天", streak: 30, total: 0 },
+    { label: "累计100次",streak: 0, total: 100 },
+  ];
+
   const today = () => new Date().toISOString().slice(0, 10);
+  const prevDay = d => { const x = new Date(d); x.setDate(x.getDate()-1); return x.toISOString().slice(0,10); };
+
   function getCheckins() { return JSON.parse(localStorage.getItem("checkins") || "[]"); }
-  function saveCheckins(data) { localStorage.setItem("checkins", JSON.stringify(data)); }
+  function saveCheckins(d) { localStorage.setItem("checkins", JSON.stringify(d)); }
+
+  function calcStreak(checkins) {
+    if (!checkins.length) return 0;
+    const dates = [...new Set(checkins.map(c => c.date))].sort().reverse();
+    let streak = 0, cur = today();
+    for (const d of dates) { if (d === cur) { streak++; cur = prevDay(cur); } else break; }
+    return streak;
+  }
+
+  function getLevel(total, streak) {
+    let lv = LEVELS[0];
+    for (const l of LEVELS) { if (total >= l.min && streak >= l.streak) lv = l; }
+    return lv;
+  }
+
+  function setRing(id, value, max) {
+    const circ = 213.6;
+    const offset = circ - Math.min(value / max, 1) * circ;
+    document.getElementById(id).style.strokeDashoffset = offset;
+  }
+
+  function renderCheckin() {
+    const checkins = getCheckins();
+    const streak = calcStreak(checkins);
+    const total = checkins.length;
+    const checkedToday = checkins.some(c => c.date === today());
+    const lv = getLevel(total, streak);
+
+    document.getElementById("streak-num").textContent = streak;
+    document.getElementById("total-num").textContent = total;
+    document.getElementById("level-badge").textContent = "Lv." + (LEVELS.indexOf(lv) + 1);
+    document.getElementById("level-name").textContent = lv.name;
+
+    // 进度环：连续以30天为满，累计以100次为满
+    setRing("ring-streak", streak, 30);
+    setRing("ring-total", total, 100);
+
+    // 角色 emoji 降级显示
+    const charEl = document.getElementById("char-emoji");
+    if (charEl) charEl.textContent = lv.emoji;
+
+    // 里程碑
+    document.getElementById("milestones").innerHTML = MILESTONES.map(m => {
+      const unlocked = total >= m.total && streak >= m.streak && (m.total > 0 ? total >= m.total : true) && (m.streak > 0 ? streak >= m.streak : true);
+      const ok = (m.total === 0 || total >= m.total) && (m.streak === 0 || streak >= m.streak);
+      return `<span class="milestone ${ok ? 'unlocked' : ''}">${ok ? '✅' : '🔒'} ${m.label}</span>`;
+    }).join("");
+
+    // 打卡按钮
+    const btn = document.getElementById("checkin-btn");
+    const noteWrap = document.getElementById("note-wrap");
+    if (checkedToday) {
+      btn.className = "checkin-btn done";
+      btn.textContent = "✅ 今天已打卡";
+      btn.onclick = null;
+      noteWrap.style.display = "none";
+    } else {
+      btn.className = "checkin-btn ready";
+      btn.textContent = "✅ 立即打卡";
+      btn.onclick = doCheckin;
+      noteWrap.style.display = "block";
+    }
+
+    // 历史
+    document.getElementById("checkin-list").innerHTML = checkins.slice(0, 30).map(c =>
+      `<div class="history-item"><div class="date">${c.date}</div>${c.note ? `<div style="margin-top:4px">${c.note}</div>` : ""}</div>`
+    ).join("") || "<p style='color:#666;text-align:center;padding:20px'>还没有打卡记录</p>";
+  }
+
   function doCheckin() {
     const note = document.getElementById("note-input").value.trim();
     const checkins = getCheckins();
     checkins.unshift({ date: today(), note });
     saveCheckins(checkins);
+
+    // 动画
+    const box = document.getElementById("char-box");
+    const newStreak = calcStreak(checkins);
+    const isMilestone = MILESTONES.some(m => (m.streak > 0 && newStreak === m.streak) || (m.total > 0 && checkins.length === m.total));
+    box.className = "character-box " + (isMilestone ? "celebrate" : "jump");
+    setTimeout(() => { box.className = "character-box"; }, 1100);
+
     renderCheckin();
   }
-  function prevDay(dateStr) {
-    const d = new Date(dateStr); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10);
-  }
-  function calcStreak(checkins) {
-    if (!checkins.length) return 0;
-    const dates = checkins.map(c => c.date).sort().reverse();
-    let streak = 0, cur = today();
-    for (const d of dates) { if (d === cur) { streak++; cur = prevDay(cur); } else break; }
-    return streak;
-  }
-  function renderCheckin() {
-    const checkins = getCheckins();
-    const checkedToday = checkins.some(c => c.date === today());
-    document.getElementById("today-label").textContent = "今天：" + today();
-    document.getElementById("streak").textContent = calcStreak(checkins);
-    const area = document.getElementById("checkin-area");
-    area.innerHTML = checkedToday
-      ? `<span class="badge">✅ 今天已打卡</span>`
-      : `<textarea id="note-input" placeholder="今天的备注（可选）"></textarea><button class="btn btn-primary" onclick="doCheckin()">打卡</button>`;
-    document.getElementById("checkin-list").innerHTML = checkins.map(c =>
-      `<div class="card"><strong>${c.date}</strong>${c.note ? `<p style="margin-top:6px">${c.note}</p>` : ""}</div>`
-    ).join("");
-  }
+
+  // 知识库
   function getKnowledge() { return JSON.parse(localStorage.getItem("knowledge") || "[]"); }
-  function saveKnowledge(data) { localStorage.setItem("knowledge", JSON.stringify(data)); }
+  function saveKnowledge(d) { localStorage.setItem("knowledge", JSON.stringify(d)); }
+
   function addKnowledge() {
     const title = document.getElementById("k-title").value.trim();
     const content = document.getElementById("k-content").value.trim();
@@ -106,26 +248,36 @@
     document.getElementById("k-tags").value = "";
     renderKnowledge();
   }
+
   function deleteKnowledge(id) {
     if (!confirm("确认删除？")) return;
     saveKnowledge(getKnowledge().filter(k => k.id !== id));
     renderKnowledge();
   }
+
   function renderKnowledge() {
     const q = document.getElementById("search").value.toLowerCase();
     const items = getKnowledge().filter(k =>
       !q || k.title.toLowerCase().includes(q) || k.content.toLowerCase().includes(q) || k.tags.toLowerCase().includes(q)
     );
     document.getElementById("knowledge-list").innerHTML = items.map(k =>
-      `<div class="card"><button class="btn btn-danger" onclick="deleteKnowledge(${k.id})">删除</button><strong>${k.title}</strong><p style="margin:8px 0">${k.content}</p>${k.tags ? k.tags.split(",").map(t => `<span class="tag">${t.trim()}</span>`).join("") : ""}<br><small>${k.date}</small></div>`
-    ).join("") || "<p style='color:#888'>暂无内容</p>";
+      `<div class="card">
+        <button class="btn-danger" onclick="deleteKnowledge(${k.id})">删除</button>
+        <strong>${k.title}</strong>
+        <p style="margin:8px 0;font-size:14px;color:#ccc">${k.content}</p>
+        <div>${k.tags ? k.tags.split(",").map(t => `<span class="tag">${t.trim()}</span>`).join("") : ""}</div>
+        <div style="margin-top:6px;font-size:11px;color:#666">${k.date}</div>
+      </div>`
+    ).join("") || "<p style='color:#666;text-align:center;padding:20px'>暂无内容</p>";
   }
+
   function showPage(name, btn) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
     document.getElementById(name).classList.add("active");
     btn.classList.add("active");
   }
+
   renderCheckin();
   renderKnowledge();
 </script>
